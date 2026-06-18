@@ -1,0 +1,228 @@
+{
+  "counter": 6,
+  "orders": [
+    {
+      "name": "Азиз Мухаммедзянов",
+      "phone": "+998 93 791 68 78",
+      "address": "Yangi Hayot district, Dustlik-2, 52, 82",
+      "note": "",
+      "items": [
+        {
+          "name": "Маргарита",
+          "size": 30,
+          "qty": 2,
+          "price": 49000,
+          "dough": "Традиционное",
+          "toppings": []
+        }
+      ],
+      "subtotal": 98000,
+      "promo": null,
+      "promoDiscount": 0,
+      "deliveryZone": "sergeli",
+      "deliveryFee": 15000,
+      "deliveryLabel": "По Сергели",
+      "district": "Сергели",
+      "total": 113000,
+      "payment": "cash",
+      "id": 5,
+      "createdAt": "2026-06-17T07:45:58.181Z",
+      "status": "done",
+      "statusUpdatedAt": "2026-06-17T07:46:11.638Z"
+    },
+    {
+      "name": "Азиз Мухаммедзянов",
+      "phone": "+998 93 791 68 78",
+      "address": "Yangi Hayot district, Dustlik-2, 52, 82",
+      "note": "",
+      "items": [
+        {
+          "name": "Собери сам",
+          "size": 30,
+          "qty": 1,
+          "price": 86200,
+          "dough": "Пышное",
+          "toppings": [
+            "Лук",
+            "Базилик",
+            "Ананас",
+            "Томаты",
+            "Шампиньоны",
+            "Двойной сыр",
+            "Томатный соус",
+            "Сырный бортик"
+          ]
+        },
+        {
+          "name": "Пепперони",
+          "size": 30,
+          "qty": 1,
+          "price": 57000,
+          "dough": "Традиционное",
+          "toppings": []
+        },
+        {
+          "name": "Цезарь с курицей",
+          "size": null,
+          "qty": 1,
+          "price": 28000,
+          "dough": null,
+          "toppings": []
+        },
+        {
+          "name": "Coca-Cola",
+          "size": null,
+          "qty": 2,
+          "price": 8000,
+          "dough": null,
+          "toppings": []
+        }
+      ],
+      "subtotal": 187200,
+      "promo": null,
+      "promoDiscount": 0,
+      "deliveryZone": "outside",
+      "deliveryFee": 45000,
+      "deliveryLabel": "За ТКАД",
+      "district": "Сергели",
+      "total": 232200,
+      "payment": "cash",
+      "id": 4,
+      "createdAt": "2026-06-17T07:45:02.387Z",
+      "status": "done",
+      "statusUpdatedAt": "2026-06-17T07:45:37.785Z"
+    },
+    {
+      "name": "Азиз Мухаммедзянов",
+      "phone": "+998 93 791 68 78",
+      "address": "Yangi Hayot district, Dustlik-2, 52, 82",
+      "note": "",
+      "items": [
+        {
+          "name": "Пепперони",
+          "size": 30,
+          "qty": 4,
+          "price": 57000,
+          "dough": "Традиционное",
+          "toppings": []
+        },
+        {
+          "name": "Пепперони",
+          "size": 30,
+          "qty": 1,
+          "price": 71000,
+          "dough": "Традиционное",
+          "toppings": [
+            "Пепперони",
+            "Курица"
+          ]
+        }
+      ],
+      "subtotal": 299000,
+      "promo": null,
+      "promoDiscount": 0,
+      "deliveryZone": "sergeli",
+      "deliveryFee": 15000,
+      "deliveryLabel": "По Сергели",
+      "district": "Сергели",
+      "total": 314000,
+      "payment": "cash",
+      "id": 3,
+      "createdAt": "2026-06-17T07:28:19.310Z",
+      "status": "done",
+      "statusUpdatedAt": "2026-06-17T07:28:42.765Z"
+    },
+    {
+      "name": "Азиз Мухаммедзянов",
+      "phone": "+998 93 791 68 78",
+      "address": "Yangi Hayot district, Dustlik-2, 52, 82",
+      "note": "",
+      "items": [
+        {
+          "name": "Пепперони",
+          "size": 30,
+          "qty": 1,
+          "price": 57000,
+          "dough": "Традиционное",
+          "toppings": []
+        },
+        {
+          "name": "Собери сам",
+          "size": 35,
+          "qty": 1,
+          "price": 195840,
+          "dough": "Пышное",
+          "toppings": [
+            "Пепперони",
+            "Говядина",
+            "Ветчина",
+            "Бекон",
+            "Курица",
+            "Курица BBQ",
+            "Пармезан",
+            "Оливки",
+            "Тимьян",
+            "Орегано",
+            "Болгарский перец",
+            "Красный лук",
+            "Чеснок",
+            "Базилик",
+            "Ананас",
+            "Томаты",
+            "Шампиньоны",
+            "Халапеньо",
+            "Двойной сыр",
+            "Экстра-сыр",
+            "Чеддер",
+            "Моцарелла",
+            "Лук",
+            "Томатный соус",
+            "Соус BBQ",
+            "Сырный бортик"
+          ]
+        }
+      ],
+      "subtotal": 252840,
+      "promo": "PIZZA2026",
+      "promoDiscount": 0,
+      "deliveryZone": "sergeli",
+      "deliveryFee": 15000,
+      "deliveryLabel": "По Сергели",
+      "district": "Сергели",
+      "total": 267840,
+      "payment": "cash",
+      "id": 2,
+      "createdAt": "2026-06-17T07:26:23.408Z",
+      "status": "done",
+      "statusUpdatedAt": "2026-06-17T07:27:31.959Z"
+    },
+    {
+      "name": "Мухаммадатз",
+      "phone": "+998 99 098 76 54",
+      "address": "Yangi Hayot district, Dustlik-2, 52, 82",
+      "note": "",
+      "items": [
+        {
+          "name": "Пепперони",
+          "size": 30,
+          "qty": 2,
+          "price": 57000,
+          "dough": "Традиционное",
+          "toppings": []
+        }
+      ],
+      "subtotal": 114000,
+      "promo": null,
+      "promoDiscount": 0,
+      "deliveryZone": "sergeli",
+      "deliveryFee": 15000,
+      "deliveryLabel": "По Сергели",
+      "district": "Сергели",
+      "total": 129000,
+      "payment": "cash",
+      "id": 1,
+      "createdAt": "2026-06-14T13:39:19.266Z",
+      "status": "accepted"
+    }
+  ]
+}

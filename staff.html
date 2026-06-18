@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Pizza Makers — Панель заказов</title>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Hanken Grotesk',sans-serif;background:#0F0F12;color:#e4e1e6;min-height:100vh}
+  .header{background:#1a1a1e;border-bottom:1px solid rgba(255,255,255,.06);padding:20px 32px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+  .header h1{font-size:22px;font-weight:800;background:linear-gradient(135deg,#ffb3af,#ff5f5f);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .hright{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .status{display:flex;align-items:center;gap:8px;font-size:13px;color:#a0a0b0}
+  .dot{width:8px;height:8px;border-radius:50%;background:#4ade80;animation:pulse 2s infinite}
+  .dot.off{background:#ff6b6b;animation:none}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+  /* Tabs */
+  .tabs{display:flex;gap:4px;background:#131316;border-radius:10px;padding:4px}
+  .tab{padding:8px 18px;border-radius:8px;border:none;background:transparent;color:#a0a0b0;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;font-family:inherit}
+  .tab.on{background:#ff5f5f;color:#fff}
+  .tab .badge{display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.2);border-radius:99px;min-width:18px;height:18px;font-size:11px;font-weight:800;padding:0 4px;margin-left:5px}
+  .tab.on .badge{background:rgba(255,255,255,.3)}
+
+  .container{max-width:960px;margin:0 auto;padding:28px 20px}
+  .empty{text-align:center;padding:80px 20px;color:#666;line-height:1.8}
+  .warn-box{background:rgba(255,95,95,.1);border:1px solid rgba(255,95,95,.3);border-radius:12px;padding:16px 20px;margin-bottom:20px;font-size:13px;color:#ffb3af;line-height:1.6}
+  .toolbar{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
+  .btn-tool{padding:10px 18px;border-radius:10px;border:1.5px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#e4e1e6;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit}
+  .btn-tool:hover{border-color:#ff5f5f;color:#ffb3af}
+  .btn-tool.primary{background:linear-gradient(135deg,#ff5f5f,#ffb3af);color:#68000e;border:none}
+  .filter-label{font-size:12px;color:#666;margin-left:auto}
+
+  /* Order card */
+  .order{background:#1f1f22;border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:22px;margin-bottom:14px;transition:border-color .3s, box-shadow .3s}
+  .order.new-order{border-color:rgba(255,95,95,.5);box-shadow:0 0 30px rgba(255,95,95,.15);animation:slideIn .4s ease,newPulse 1.5s 3}
+  .order.cooking{border-color:rgba(251,191,36,.4);box-shadow:0 0 20px rgba(251,191,36,.08)}
+  .order.delivery{border-color:rgba(96,165,250,.4);box-shadow:0 0 20px rgba(96,165,250,.08)}
+  .order.done{border-color:rgba(74,222,128,.3);opacity:.75}
+  @keyframes slideIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes newPulse{0%,100%{box-shadow:0 0 20px rgba(255,95,95,.15)}50%{box-shadow:0 0 40px rgba(255,95,95,.45)}}
+
+  .order-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+  .order-id{font-size:11px;color:#ff5f5f;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
+  .order-name{font-size:18px;font-weight:700;margin-bottom:2px}
+  .order-meta{color:#a0a0b0;font-size:13px}
+  .order-meta a{color:#ff9f9f;text-decoration:none}
+  .order-meta a:hover{text-decoration:underline}
+
+  /* Status badge */
+  .status-badge{padding:5px 12px;border-radius:99px;font-size:12px;font-weight:700;white-space:nowrap;flex-shrink:0}
+  .status-badge.new{background:rgba(255,95,95,.18);border:1px solid rgba(255,95,95,.45);color:#ff8f8f}
+  .status-badge.cooking{background:rgba(251,191,36,.14);border:1px solid rgba(251,191,36,.4);color:#fbbf24}
+  .status-badge.delivery{background:rgba(96,165,250,.14);border:1px solid rgba(96,165,250,.4);color:#60a5fa}
+  .status-badge.done{background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.35);color:#4ade80}
+
+  /* Timer */
+  .order-timer{font-size:12px;color:#a0a0b0;margin-top:4px}
+  .order-timer.late{color:#ff6b6b;font-weight:600}
+
+  .order-items{background:#131316;border-radius:10px;padding:12px 14px;font-size:13px;color:#ccc;margin-bottom:14px;line-height:1.9}
+  .order-items .item-row{display:flex;justify-content:space-between;gap:8px}
+  .item-price{color:#ffb3af;font-weight:600;white-space:nowrap;flex-shrink:0}
+  .order-extras{font-size:12px;color:#888;margin-top:6px}
+
+  .order-total-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+  .order-total{font-size:22px;font-weight:800;color:#ffb3af}
+  .order-payment{font-size:12px;padding:4px 10px;border-radius:8px;background:#2a2a2e;color:#a0a0b0;font-weight:600}
+  .order-note{font-size:12px;color:#888;font-style:italic;margin-bottom:12px}
+
+  /* Status buttons */
+  .status-btns{display:flex;gap:8px;flex-wrap:wrap}
+  .btn-status{flex:1;min-width:100px;padding:11px 10px;border-radius:10px;border:1.5px solid;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;text-align:center;font-family:inherit}
+  .btn-status:disabled{opacity:.3;cursor:not-allowed}
+  .btn-status.accept{background:linear-gradient(135deg,#ff5f5f,#ffb3af);color:#68000e;border:none}
+  .btn-status.accept:hover:not(:disabled){filter:brightness(1.1);transform:scale(1.02)}
+  .btn-status.cooking-btn{border-color:rgba(251,191,36,.5);background:rgba(251,191,36,.1);color:#fbbf24}
+  .btn-status.cooking-btn:hover:not(:disabled){background:rgba(251,191,36,.2)}
+  .btn-status.delivery-btn{border-color:rgba(96,165,250,.5);background:rgba(96,165,250,.1);color:#60a5fa}
+  .btn-status.delivery-btn:hover:not(:disabled){background:rgba(96,165,250,.2)}
+  .btn-status.done-btn{border-color:rgba(74,222,128,.5);background:rgba(74,222,128,.1);color:#4ade80}
+  .btn-status.done-btn:hover:not(:disabled){background:rgba(74,222,128,.2)}
+
+  /* Delivery zone chip */
+  .zone-chip{display:inline-block;font-size:11px;padding:3px 8px;border-radius:6px;background:rgba(255,95,95,.12);border:1px solid rgba(255,95,95,.25);color:#ff9f9f;margin-left:6px;font-weight:600}
+
+  /* Alarm */
+  .alarm-banner{position:fixed;top:0;left:0;right:0;background:#ff5f5f;color:#fff;text-align:center;padding:13px;font-weight:700;font-size:15px;z-index:200;display:none;animation:alarmFlash .5s infinite alternate;letter-spacing:.02em}
+  @keyframes alarmFlash{from{background:#ff5f5f}to{background:#cc0000}}
+  .alarm-banner.on{display:block}
+
+  /* Section title */
+  .section-title{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#666;margin:18px 0 10px}
+
+  /* Stats row */
+  .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:22px}
+  .stat-card{background:#1a1a1e;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:14px 16px}
+  .stat-val{font-size:24px;font-weight:800;color:#ffb3af}
+  .stat-label{font-size:11px;color:#666;margin-top:2px}
+
+  /* Analytics */
+  .analytics-grid{display:grid;grid-template-columns:1fr;gap:18px}
+  @media(min-width:768px){.analytics-grid{grid-template-columns:1fr 1fr}}
+  .analytics-grid .wide{grid-column:1/-1}
+  .chart-card{background:#1a1a1e;border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:20px}
+  .chart-card h3{font-size:14px;font-weight:700;color:#e4e1e6;margin-bottom:4px}
+  .chart-card p{font-size:12px;color:#666;margin-bottom:16px}
+  .chart-wrap{position:relative;height:260px}
+  .chart-wrap.tall{height:300px}
+  .period-btns{display:flex;gap:8px;margin-bottom:18px}
+  .period-btn{padding:8px 16px;border-radius:8px;border:1.5px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#a0a0b0;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
+  .period-btn.on{background:#ff5f5f;border-color:#ff5f5f;color:#fff}
+  .owner-badge{font-size:11px;padding:4px 10px;border-radius:99px;background:rgba(255,179,175,.12);border:1px solid rgba(255,95,95,.3);color:#ffb3af;font-weight:700}
+  .tab.owner-only{display:none}
+  .tab.owner-only.show{display:inline-block}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<div class="alarm-banner" id="alarmBanner">🔔 НОВЫЙ ЗАКАЗ! Нажмите «Принять заказ»</div>
+
+<header class="header">
+  <h1>🍕 Pizza Makers — Заказы</h1>
+  <div class="hright">
+    <div class="tabs">
+      <button class="tab on" onclick="switchTab('active',this)">Активные <span class="badge" id="badge-active">0</span></button>
+      <button class="tab" onclick="switchTab('done',this)">Выполненные <span class="badge" id="badge-done">0</span></button>
+      <button class="tab" onclick="switchTab('promos',this)">🎟 Промокоды</button>
+      <button class="tab owner-only" id="tabAnalytics" onclick="switchTab('analytics',this)">📊 Аналитика</button>
+    </div>
+    <span class="owner-badge owner-only" id="ownerBadge" style="display:none">👑 Владелец</span>
+    <div class="status"><div class="dot" id="statusDot"></div><span id="statusText">Подключение...</span></div>
+    <button onclick="staffLogout()" style="padding:8px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:#a0a0b0;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit" title="Выйти из панели">🔐 Выйти</button>
+  </div>
+</header>
+
+<div class="container">
+  <div id="fileWarn" class="warn-box" style="display:none">
+    ⚠️ Открывайте эту страницу только через основной сайт.<br>
+    Не открывайте файл напрямую — заказы не будут отображаться.
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row" id="statsRow">
+    <div class="stat-card"><div class="stat-val" id="stat-new">0</div><div class="stat-label">Новых</div></div>
+    <div class="stat-card"><div class="stat-val" id="stat-cooking">0</div><div class="stat-label">Готовится</div></div>
+    <div class="stat-card"><div class="stat-val" id="stat-delivery">0</div><div class="stat-label">В пути</div></div>
+    <div class="stat-card"><div class="stat-val" id="stat-today">0</div><div class="stat-label">Сегодня всего</div></div>
+  </div>
+
+  <div class="toolbar">
+    <button class="btn-tool primary" onclick="sendTestOrder()">🧪 Тестовый заказ</button>
+    <button class="btn-tool" onclick="poll()">🔄 Обновить</button>
+    <span class="filter-label" id="lastUpdate"></span>
+  </div>
+
+  <div id="activeSection">
+    <div id="ordersList"><div class="empty">Активных заказов нет.<br>Страница обновляется каждые 3 сек.</div></div>
+  </div>
+  <div id="doneSection" style="display:none">
+    <div id="doneList"><div class="empty">Выполненных заказов нет.</div></div>
+  </div>
+  <div id="promosSection" style="display:none">
+    <div style="max-width:560px">
+      <h2 style="font-size:18px;font-weight:800;color:#ffb3af;margin-bottom:16px">🎟 Управление промокодами</h2>
+      <!-- Create form -->
+      <div style="background:#1f1f22;border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:20px;margin-bottom:20px">
+        <div style="font-size:13px;font-weight:700;color:#a0a0b0;margin-bottom:12px;text-transform:uppercase;letter-spacing:.08em">Создать промокод</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+          <input id="pCode" placeholder="Код (PIZZA20)" maxlength="20" style="flex:1;min-width:100px;background:#111;border:1.5px solid rgba(255,255,255,.1);border-radius:8px;padding:10px 12px;color:#e4e1e6;font-size:13px;outline:none">
+          <select id="pType" style="background:#111;border:1.5px solid rgba(255,255,255,.1);border-radius:8px;padding:10px 12px;color:#e4e1e6;font-size:13px;outline:none">
+            <option value="percent">% скидка</option>
+            <option value="fixed">Фиксированная (сум)</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+          <input id="pValue" type="number" placeholder="Значение (10 или 15000)" style="flex:1;background:#111;border:1.5px solid rgba(255,255,255,.1);border-radius:8px;padding:10px 12px;color:#e4e1e6;font-size:13px;outline:none">
+          <input id="pLimit" type="number" placeholder="Лимит использований (0=∞)" style="flex:1;background:#111;border:1.5px solid rgba(255,255,255,.1);border-radius:8px;padding:10px 12px;color:#e4e1e6;font-size:13px;outline:none">
+        </div>
+        <button onclick="createPromo()" style="width:100%;background:linear-gradient(135deg,#ff5f5f,#ffb3af);color:#68000e;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">+ Создать промокод</button>
+        <div id="promoCreateErr" style="color:#ff6b6b;font-size:12px;margin-top:8px;min-height:16px"></div>
+      </div>
+      <!-- List -->
+      <div id="promoList"><div class="empty">Загрузка...</div></div>
+    </div>
+  </div>
+  <div id="analyticsSection" style="display:none">
+    <div style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+      <h2 style="font-size:18px;font-weight:800;color:#ffb3af">📊 Аналитика бизнеса</h2>
+      <div class="period-btns">
+        <button class="period-btn on" id="periodWeek" onclick="setAnalyticsPeriod('week',this)">7 дней</button>
+        <button class="period-btn" id="periodMonth" onclick="setAnalyticsPeriod('month',this)">30 дней</button>
+      </div>
+    </div>
+    <div class="stats-row" id="analyticsSummary">
+      <div class="stat-card"><div class="stat-val" id="aRevenue">—</div><div class="stat-label">Выручка</div></div>
+      <div class="stat-card"><div class="stat-val" id="aOrders">—</div><div class="stat-label">Заказов</div></div>
+      <div class="stat-card"><div class="stat-val" id="aAvg">—</div><div class="stat-label">Средний чек</div></div>
+    </div>
+    <div class="analytics-grid">
+      <div class="chart-card wide">
+        <h3>💰 Выручка</h3>
+        <p>Динамика продаж за выбранный период</p>
+        <div class="chart-wrap tall"><canvas id="chartRevenue"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>🏆 Топ-3 пиццы</h3>
+        <p>Самые заказываемые позиции</p>
+        <div class="chart-wrap"><canvas id="chartTop"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>⏰ Пиковые часы</h3>
+        <p>Когда приходит больше всего заказов</p>
+        <div class="chart-wrap"><canvas id="chartHours"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let API = '';
+let knownIds = new Set();
+let alarmInterval = null;
+let allOrders = [];
+let currentTab = 'active';
+let staffToken = null;
+let staffRole = 'staff';
+let analyticsPeriod = 'week';
+let chartRevenue = null, chartTop = null, chartHours = null;
+
+// Get JWT token from cookie
+function getStaffToken() {
+  const m = document.cookie.match(/pm_staff_token=([^;]+)/);
+  return m ? m[1] : null;
+}
+staffToken = getStaffToken();
+
+function authHeaders() {
+  return staffToken ? { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + staffToken } : { 'Content-Type': 'application/json' };
+}
+
+function staffLogout() {
+  document.cookie = 'pm_staff_token=;path=/;max-age=0';
+  location.reload();
+}
+
+// ── STATUS CONFIG ──
+const STATUSES = {
+  new:      { label: '🆕 Новый',     cls: 'new',      next: 'cooking'  },
+  cooking:  { label: '👨‍🍳 Готовится', cls: 'cooking',  next: 'delivery' },
+  delivery: { label: '🛵 В пути',    cls: 'delivery', next: 'done'     },
+  done:     { label: '✅ Доставлен', cls: 'done',     next: null       },
+};
+const STATUS_NEXT_LABEL = {
+  new:      '👨‍🍳 Начать готовить',
+  cooking:  '🛵 Передать курьеру',
+  delivery: '✅ Отметить доставленным',
+};
+const STATUS_BTN_CLS = {
+  new:      'accept',
+  cooking:  'cooking-btn',
+  delivery: 'delivery-btn',
+};
+
+// ── SERVER DETECT ──
+async function detectServer() {
+  const bases = [''];
+  if (location.port === '3000') bases.push('http://localhost:3000','http://127.0.0.1:3000');
+  for (const base of bases) {
+    try {
+      const r = await fetch(`${base}/api/health`, { cache:'no-store' });
+      if (r.ok) { API = base; return true; }
+    } catch {}
+  }
+  return false;
+}
+
+if (location.protocol === 'file:') {
+  document.getElementById('fileWarn').style.display = 'block';
+}
+
+// ── SOUND ──
+function createSound() {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  function beep(freq, dur) {
+    const osc = ctx.createOscillator(), gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value = freq; osc.type = 'square';
+    gain.gain.setValueAtTime(0.35, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + dur);
+  }
+  return { beep, ctx };
+}
+const sound = createSound();
+document.addEventListener('click', () => sound.ctx.resume(), { once:true });
+
+function startAlarm() {
+  document.getElementById('alarmBanner').classList.add('on');
+  if (alarmInterval) return;
+  sound.beep(880, 0.3);
+  alarmInterval = setInterval(() => {
+    sound.ctx.resume();
+    sound.beep(880, 0.25);
+    setTimeout(() => sound.beep(1100, 0.25), 300);
+  }, 2200);
+}
+function stopAlarm() {
+  document.getElementById('alarmBanner').classList.remove('on');
+  clearInterval(alarmInterval); alarmInterval = null;
+}
+
+// ── TIMER FORMATTING ──
+function timeSince(dateStr) {
+  const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
+  if (diff < 60) return `${diff} сек назад`;
+  const m = Math.floor(diff / 60);
+  if (m < 60) return `${m} мин назад`;
+  return `${Math.floor(m/60)}ч ${m%60}мин назад`;
+}
+function isLate(dateStr, status) {
+  const diff = (Date.now() - new Date(dateStr)) / 60000;
+  if (status === 'new') return diff > 3;
+  if (status === 'cooking') return diff > 20;
+  if (status === 'delivery') return diff > 40;
+  return false;
+}
+
+// ── ORDER RENDERING ──
+function renderOrderCard(o) {
+  const st = STATUSES[o.status] || STATUSES.new;
+  const since = timeSince(o.statusUpdatedAt || o.createdAt);
+  const late = isLate(o.statusUpdatedAt || o.createdAt, o.status);
+  const createdTime = new Date(o.createdAt).toLocaleTimeString('ru-RU', {hour:'2-digit',minute:'2-digit'});
+
+  const itemsHTML = (o.items||[]).map(i => {
+    let name = i.name + (i.size ? ` ${i.size}см` : '') + (i.dough ? ` · ${i.dough}` : '');
+    const extra = [];
+    if (i.toppings?.length) extra.push('+ ' + i.toppings.join(', '));
+    return `<div class="item-row">
+      <span>${name} × ${i.qty}${extra.length ? '<br><span style="font-size:11px;color:#888">'+extra.join(' ')+'</span>' : ''}</span>
+      <span class="item-price">${((i.price||0)*i.qty).toLocaleString('ru-RU')}</span>
+    </div>`;
+  }).join('');
+
+  const zoneLabels = {sergeli:'Сергели',tkad:'ТКАД',outside:'За ТКАД'};
+  const zoneStr = o.deliveryZone ? `<span class="zone-chip">${zoneLabels[o.deliveryZone]||o.deliveryZone} · ${(o.deliveryFee||0).toLocaleString('ru-RU')} сум</span>` : '';
+
+  const payLabels = {cash:'💵 Наличные',card:'💳 Карта',click:'⚡ Click',payme:'💚 Payme'};
+  const payStr = payLabels[o.payment] || o.payment || 'Наличные';
+
+  // Status buttons: show next action, plus for active also show all future steps greyed
+  let btnsHTML = '';
+  if (o.status !== 'done') {
+    const nextStatus = st.next;
+    const nextLabel = STATUS_NEXT_LABEL[o.status];
+    const nextCls = STATUS_BTN_CLS[o.status];
+    btnsHTML = `<button class="btn-status ${nextCls}" onclick="updateStatus(${o.id},'${nextStatus}')">${nextLabel}</button>`;
+    // add done shortcut if not already next
+    if (o.status === 'new') {
+      btnsHTML += `<button class="btn-status cooking-btn" style="min-width:unset;flex:none;padding:11px 14px" onclick="updateStatus(${o.id},'done')" title="Сразу завершить">✅</button>`;
+    }
+  } else {
+    btnsHTML = `<button class="btn-status done-btn" disabled>✅ Доставлен</button>`;
+  }
+
+  return `<div class="order ${o.status==='new'?'new-order':o.status}" id="order-${o.id}">
+    <div class="order-top">
+      <div>
+        <div class="order-id">Заказ #${o.id} · ${createdTime}${o.promo ? ' · 🎟 '+o.promo : ''}</div>
+        <div class="order-name">${o.name}</div>
+        <div class="order-meta">
+          📞 <a href="tel:${o.phone}">${o.phone}</a> &nbsp;·&nbsp;
+          📍 ${o.address}${zoneStr}
+          ${o.district ? `<br>🏙 Район: ${o.district}` : ''}
+        </div>
+        <div class="order-timer${late?' late':''}">
+          ${st.label} · ${since}${late?' ⚠️ Задержка!':''}
+        </div>
+      </div>
+      <span class="status-badge ${st.cls}">${st.label}</span>
+    </div>
+
+    <div class="order-items">${itemsHTML}</div>
+
+    <div class="order-total-row">
+      <div class="order-total">${(o.total||0).toLocaleString('ru-RU')} сум</div>
+      <span class="order-payment">${payStr}</span>
+    </div>
+
+    ${o.note ? `<div class="order-note">💬 ${o.note}</div>` : ''}
+
+    <div class="status-btns">${btnsHTML}</div>
+  </div>`;
+}
+
+// ── STATUS UPDATE ──
+async function updateStatus(id, status) {
+  const card = document.getElementById(`order-${id}`);
+  if (card) card.style.opacity = '0.5';
+  try {
+    await fetch(`${API}/api/orders/${id}/status`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ status })
+    });
+  } catch(e) {
+    console.warn('Status update error (will use local fallback):', e.message);
+  }
+  // Update locally too (offline fallback)
+  const order = allOrders.find(o => o.id === id);
+  if (order) {
+    order.status = status;
+    order.statusUpdatedAt = new Date().toISOString();
+    // Broadcast to client via localStorage (cross-tab signal)
+    broadcastStatusToClient(id, status, order);
+  }
+  if (card) card.style.opacity = '1';
+  poll();
+}
+
+// ── BROADCAST TO CLIENT (localStorage channel) ──
+function broadcastStatusToClient(orderId, status, orderData) {
+  try {
+    const updates = JSON.parse(localStorage.getItem('pm_order_statuses') || '{}');
+    updates[orderId] = {
+      status,
+      updatedAt: new Date().toISOString(),
+      name: orderData?.name,
+      total: orderData?.total,
+    };
+    localStorage.setItem('pm_order_statuses', JSON.stringify(updates));
+  } catch(e) {}
+}
+
+// ── ACCEPT (legacy compat) ──
+async function acceptOrder(id) {
+  await updateStatus(id, 'cooking');
+}
+
+// ── TABS ──
+function switchTab(tab, btn) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('activeSection').style.display = tab === 'active' ? 'block' : 'none';
+  document.getElementById('doneSection').style.display = tab === 'done' ? 'block' : 'none';
+  document.getElementById('promosSection').style.display = tab === 'promos' ? 'block' : 'none';
+  document.getElementById('analyticsSection').style.display = tab === 'analytics' ? 'block' : 'none';
+  document.getElementById('statsRow').style.display = tab === 'analytics' ? 'none' : 'grid';
+  document.querySelector('.toolbar').style.display = tab === 'analytics' ? 'none' : 'flex';
+  if (tab === 'promos') loadPromos();
+  if (tab === 'analytics') loadAnalytics();
+}
+
+// ── OWNER UI ──
+async function checkStaffRole() {
+  try {
+    if (!API) await detectServer();
+    const r = await fetch(`${API}/api/staff/check`, { headers: authHeaders() });
+    if (!r.ok) return;
+    const d = await r.json();
+    staffRole = d.role || 'staff';
+    if (staffRole === 'owner') {
+      document.querySelectorAll('.owner-only').forEach(el => {
+        el.classList.add('show');
+        if (el.id === 'ownerBadge') el.style.display = 'inline-block';
+      });
+    }
+  } catch {}
+}
+
+// ── ANALYTICS ──
+const CHART_COLORS = {
+  coral: 'rgba(255, 95, 95, 0.85)',
+  coralFill: 'rgba(255, 95, 95, 0.15)',
+  gold: 'rgba(251, 191, 36, 0.85)',
+  blue: 'rgba(96, 165, 250, 0.85)',
+  grid: 'rgba(255,255,255,0.06)',
+  text: '#888',
+};
+
+function chartDefaults() {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { labels: { color: '#a0a0b0', font: { family: 'Hanken Grotesk', size: 11 } } },
+      tooltip: {
+        backgroundColor: '#1f1f22',
+        borderColor: 'rgba(255,255,255,0.1)',
+        borderWidth: 1,
+        titleColor: '#e4e1e6',
+        bodyColor: '#a0a0b0',
+        padding: 12,
+      },
+    },
+    scales: {
+      x: { ticks: { color: CHART_COLORS.text, maxRotation: 45 }, grid: { color: CHART_COLORS.grid } },
+      y: { ticks: { color: CHART_COLORS.text }, grid: { color: CHART_COLORS.grid }, beginAtZero: true },
+    },
+  };
+}
+
+function fmtSum(n) {
+  return (n || 0).toLocaleString('ru-RU') + ' сум';
+}
+
+function setAnalyticsPeriod(period, btn) {
+  analyticsPeriod = period;
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  loadAnalytics();
+}
+
+async function loadAnalytics() {
+  if (staffRole !== 'owner') return;
+  try {
+    if (!API) await detectServer();
+    const r = await fetch(`${API}/api/analytics?period=${analyticsPeriod}`, { headers: authHeaders() });
+    const d = await r.json();
+    if (!d.ok) return;
+    renderAnalytics(d.analytics);
+  } catch (e) {
+    console.warn('Analytics error:', e.message);
+  }
+}
+
+function renderAnalytics(data) {
+  const s = data.summary || {};
+  document.getElementById('aRevenue').textContent = fmtSum(s.totalRevenue);
+  document.getElementById('aOrders').textContent = s.orderCount || 0;
+  document.getElementById('aAvg').textContent = fmtSum(s.avgOrder);
+
+  if (chartRevenue) chartRevenue.destroy();
+  if (chartTop) chartTop.destroy();
+  if (chartHours) chartHours.destroy();
+
+  chartRevenue = new Chart(document.getElementById('chartRevenue'), {
+    type: 'line',
+    data: {
+      labels: data.labels,
+      datasets: [{
+        label: 'Выручка (сум)',
+        data: data.revenue,
+        borderColor: CHART_COLORS.coral,
+        backgroundColor: CHART_COLORS.coralFill,
+        fill: true,
+        tension: 0.35,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        pointBackgroundColor: CHART_COLORS.coral,
+      }],
+    },
+    options: {
+      ...chartDefaults(),
+      plugins: {
+        ...chartDefaults().plugins,
+        tooltip: {
+          ...chartDefaults().plugins.tooltip,
+          callbacks: { label: ctx => fmtSum(ctx.parsed.y) },
+        },
+      },
+      scales: {
+        ...chartDefaults().scales,
+        y: {
+          ...chartDefaults().scales.y,
+          ticks: { color: CHART_COLORS.text, callback: v => (v / 1000) + 'k' },
+        },
+      },
+    },
+  });
+
+  const top = data.topPizzas || [];
+  const topColors = [CHART_COLORS.coral, CHART_COLORS.gold, CHART_COLORS.blue];
+  chartTop = new Chart(document.getElementById('chartTop'), {
+    type: 'bar',
+    data: {
+      labels: top.length ? top.map(p => p.name) : ['Нет данных'],
+      datasets: [{
+        label: 'Заказано (шт.)',
+        data: top.length ? top.map(p => p.qty) : [0],
+        backgroundColor: topColors.slice(0, top.length || 1),
+        borderRadius: 8,
+        borderSkipped: false,
+      }],
+    },
+    options: {
+      ...chartDefaults(),
+      indexAxis: 'y',
+      plugins: { ...chartDefaults().plugins, legend: { display: false } },
+    },
+  });
+
+  const hours = data.hours || [];
+  const hourLabels = hours.map(h => String(h.hour).padStart(2, '0') + ':00');
+  const peakIdx = hours.reduce((max, h, i, arr) => h.count > arr[max].count ? i : max, 0);
+  chartHours = new Chart(document.getElementById('chartHours'), {
+    type: 'bar',
+    data: {
+      labels: hourLabels,
+      datasets: [{
+        label: 'Заказов',
+        data: hours.map(h => h.count),
+        backgroundColor: hours.map((_, i) => i === peakIdx ? CHART_COLORS.coral : 'rgba(255,255,255,0.12)'),
+        borderRadius: 4,
+        borderSkipped: false,
+      }],
+    },
+    options: {
+      ...chartDefaults(),
+      plugins: { ...chartDefaults().plugins, legend: { display: false } },
+      scales: {
+        x: { ticks: { color: CHART_COLORS.text, maxTicksLimit: 12 }, grid: { display: false } },
+        y: { ...chartDefaults().scales.y, ticks: { color: CHART_COLORS.text, stepSize: 1 } },
+      },
+    },
+  });
+}
+
+// ── RENDER ──
+function renderAll(orders) {
+  allOrders = orders;
+
+  const active = orders.filter(o => o.status !== 'done');
+  const done = orders.filter(o => o.status === 'done');
+  const newOrders = active.filter(o => o.status === 'new');
+  const cooking = active.filter(o => o.status === 'cooking');
+  const delivery = active.filter(o => o.status === 'delivery');
+
+  // Stats
+  document.getElementById('stat-new').textContent = newOrders.length;
+  document.getElementById('stat-cooking').textContent = cooking.length;
+  document.getElementById('stat-delivery').textContent = delivery.length;
+  document.getElementById('stat-today').textContent = orders.length;
+
+  // Badges
+  document.getElementById('badge-active').textContent = active.length;
+  document.getElementById('badge-done').textContent = done.length;
+
+  // Active orders grouped
+  const activeEl = document.getElementById('ordersList');
+  if (!active.length) {
+    activeEl.innerHTML = '<div class="empty">Активных заказов нет 🎉<br>Страница обновляется автоматически.</div>';
+  } else {
+    let html = '';
+    if (newOrders.length) html += `<div class="section-title">🔴 Новые (${newOrders.length})</div>` + newOrders.map(renderOrderCard).join('');
+    if (cooking.length) html += `<div class="section-title">🟡 Готовится (${cooking.length})</div>` + cooking.map(renderOrderCard).join('');
+    if (delivery.length) html += `<div class="section-title">🔵 В пути (${delivery.length})</div>` + delivery.map(renderOrderCard).join('');
+    activeEl.innerHTML = html;
+  }
+
+  // Done
+  const doneEl = document.getElementById('doneList');
+  doneEl.innerHTML = done.length
+    ? done.slice(0,30).map(renderOrderCard).join('')
+    : '<div class="empty">Выполненных заказов нет.</div>';
+
+  // Alarm
+  const hasNew = newOrders.some(o => !knownIds.has(o.id));
+  if (hasNew) {
+    newOrders.forEach(o => { if (!knownIds.has(o.id)) { knownIds.add(o.id); } });
+    startAlarm();
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('🍕 Новый заказ!', {
+        body: `${newOrders[0].name} — ${(newOrders[0].total||0).toLocaleString('ru-RU')} сум`
+      });
+    }
+  }
+  if (!newOrders.length) stopAlarm();
+}
+
+// ── POLL ──
+async function poll() {
+  const dot = document.getElementById('statusDot');
+  document.getElementById('lastUpdate').textContent = 'Обновлено: ' + new Date().toLocaleTimeString('ru-RU');
+  try {
+    if (!API) await detectServer();
+    // Try to get all orders (active + done)
+    let orders = [];
+    try {
+      const r1 = await fetch(`${API}/api/orders/all`, { headers: authHeaders() });
+      if (r1.ok) { const d = await r1.json(); orders = d.orders || []; }
+    } catch {}
+    // Fallback: pending only
+    if (!orders.length) {
+      const r2 = await fetch(`${API}/api/orders/pending`);
+      if (r2.ok) { const d = await r2.json(); orders = d.orders || []; }
+    }
+    dot.classList.remove('off');
+    document.getElementById('statusText').textContent = orders.length + ' заказ(ов)';
+    renderAll(orders);
+  } catch(e) {
+    dot.classList.add('off');
+    document.getElementById('statusText').textContent = 'Нет связи';
+    document.getElementById('ordersList').innerHTML = '<div class="warn-box">❌ Нет соединения с сервером. Проверьте, запущен ли сервер.</div>';
+  }
+}
+
+// ── TEST ORDER ──
+async function sendTestOrder() {
+  try {
+    if (!await detectServer()) throw new Error('Сервер не запущен');
+    const r = await fetch(`${API}/api/test-order`, { method:'POST' });
+    const data = await r.json();
+    if (!data.ok && !data.success) throw new Error(data.error||'Ошибка');
+    await poll();
+    alert(`Тестовый заказ #${data.orderId} создан!\n\n${data.telegram ? 'Telegram ✓' : 'Telegram — проверьте .env'}`);
+  } catch(e) {
+    alert('Ошибка: ' + e.message);
+  }
+}
+
+// ── PROMO MANAGEMENT ──
+async function loadPromos() {
+  const el = document.getElementById('promoList');
+  if (!el) return;
+  try {
+    const r = await fetch(`${API}/api/promo/list`, { headers: authHeaders() });
+    const d = await r.json();
+    if (!d.ok) { el.innerHTML = '<div class="empty">Ошибка загрузки промокодов</div>'; return; }
+    const promos = d.promos;
+    if (!promos.length) { el.innerHTML = '<div class="empty">Промокодов нет — создайте первый</div>'; return; }
+    el.innerHTML = promos.map(p => `
+      <div style="background:#1f1f22;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:14px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+        <div>
+          <span style="font-size:15px;font-weight:800;color:${p.active?'#ffb3af':'#666'};font-family:monospace">${p.code}</span>
+          <span style="margin-left:8px;font-size:12px;padding:2px 8px;border-radius:6px;background:${p.active?'rgba(74,222,128,.15)':'rgba(255,255,255,.06)'};color:${p.active?'#4ade80':'#666'};font-weight:700">${p.active?'Активен':'Отключён'}</span>
+          <div style="font-size:12px;color:#a0a0b0;margin-top:4px">${p.label} · ${p.usageLimit>0?`${p.usedCount}/${p.usageLimit} использований`:'Без лимита (использован '+p.usedCount+'x)'}</div>
+        </div>
+        <button onclick="togglePromo('${p.code}')" style="padding:8px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#a0a0b0;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">
+          ${p.active ? '⏸ Отключить' : '▶ Включить'}
+        </button>
+      </div>
+    `).join('');
+  } catch { el.innerHTML = '<div class="empty">Ошибка соединения</div>'; }
+}
+
+async function createPromo() {
+  const code = document.getElementById('pCode').value.trim().toUpperCase();
+  const type = document.getElementById('pType').value;
+  const value = Number(document.getElementById('pValue').value);
+  const usageLimit = Number(document.getElementById('pLimit').value) || 0;
+  const errEl = document.getElementById('promoCreateErr');
+  errEl.textContent = '';
+  if (!code || code.length < 3) { errEl.textContent = 'Код минимум 3 символа'; return; }
+  if (!value || value <= 0) { errEl.textContent = 'Укажите значение скидки'; return; }
+  try {
+    const r = await fetch(`${API}/api/promo/create`, {
+      method: 'POST', headers: authHeaders(),
+      body: JSON.stringify({ code, type, value, usageLimit })
+    });
+    const d = await r.json();
+    if (!d.ok) { errEl.textContent = d.error || 'Ошибка создания'; return; }
+    document.getElementById('pCode').value = '';
+    document.getElementById('pValue').value = '';
+    document.getElementById('pLimit').value = '';
+    loadPromos();
+  } catch { errEl.textContent = 'Ошибка соединения'; }
+}
+
+async function togglePromo(code) {
+  try {
+    const r = await fetch(`${API}/api/promo/toggle`, {
+      method: 'POST', headers: authHeaders(),
+      body: JSON.stringify({ code })
+    });
+    const d = await r.json();
+    if (d.ok) loadPromos();
+  } catch {}
+}
+
+// ── INIT ──
+if ('Notification' in window) Notification.requestPermission();
+detectServer().then(() => { checkStaffRole(); poll(); });
+setInterval(poll, 3000);
+
+// Re-render timers every 30s
+setInterval(() => {
+  if (allOrders.length) renderAll(allOrders);
+}, 30000);
+</script>
+</body>
+</html>

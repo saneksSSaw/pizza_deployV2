@@ -1,0 +1,20 @@
+{
+  "name": "pizza-makers",
+  "version": "2.0.0",
+  "description": "Pizza Makers — заказы с доставкой в Ташкенте",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "migrate": "node scripts/migrate-json-to-mongo.js",
+    "test-bot": "node scripts/test-bot.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "^4.22.2",
+    "mongoose": "^8.24.0"
+  }
+}

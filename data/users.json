@@ -1,0 +1,27 @@
+[
+  {
+    "id": 1781483857869,
+    "name": "aziz",
+    "email": "azrq 9u43podfbiz@gmail.com",
+    "phone": "+998 93 791 68 78",
+    "passHash": "7838701840323ccf5e2e2fcbb422764ceb58f0dba210d9547d9f5c7344804407",
+    "createdAt": "2026-06-15T00:37:37.871Z",
+    "orderHistory": [],
+    "savedAddresses": [],
+    "favs": []
+  },
+  {
+    "id": 1781810718188,
+    "name": "Азиз Мухаммедзянов",
+    "email": "muhammedzanovaziz878@gmail.com",
+    "phone": "+998 97 445 23 45",
+    "passHash": "d8cab0e5177793f369484ce835ede21808b4e20d97a3f3afe1cc627d596285d4",
+    "salt": "b9272d247e5bf4d9bd1b4beabfb5da93",
+    "role": "customer",
+    "bonusBalance": 0,
+    "orderHistory": [],
+    "savedAddresses": [],
+    "favs": [],
+    "createdAt": "2026-06-18T19:25:18.188Z"
+  }
+]

@@ -1,0 +1,38 @@
+[
+  {
+    "code": "PIZZA10",
+    "type": "percent",
+    "value": 10,
+    "label": "−10% на заказ",
+    "active": true,
+    "usageLimit": 0,
+    "usedCount": 0
+  },
+  {
+    "code": "SERGELI",
+    "type": "fixed",
+    "value": 15000,
+    "label": "−15 000 сум",
+    "active": true,
+    "usageLimit": 0,
+    "usedCount": 0
+  },
+  {
+    "code": "MAKERS",
+    "type": "percent",
+    "value": 15,
+    "label": "−15% на заказ",
+    "active": true,
+    "usageLimit": 100,
+    "usedCount": 0
+  },
+  {
+    "code": "PIZZA2026",
+    "type": "percent",
+    "value": 20,
+    "label": "−20% (акция 2026)",
+    "active": true,
+    "usageLimit": 50,
+    "usedCount": 1
+  }
+]
