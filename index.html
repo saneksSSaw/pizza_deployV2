@@ -570,7 +570,7 @@
     <button type="button" class="lang-btn" data-lang="uz" onclick="setLang('uz');closeMobMenu()">UZ</button>
     <button type="button" class="lang-btn" data-lang="en" onclick="setLang('en');closeMobMenu()">EN</button>
   </div>
-  <button class="mob-link" onclick="openAuth();closeMobMenu()" data-i18n="nav.login">Войти</button>
+  <button id="mobAuthBtn" class="mob-link" onclick="openAuth();closeMobMenu()" data-i18n="nav.login">Войти</button>
   <button class="mob-link accent" onclick="goPage('menu');closeMobMenu()">🍕 <span data-i18n="nav.order">Заказать</span></button>
 </div>
 
@@ -1207,6 +1207,10 @@ let API_URL = '';
 let serverOnline = false;
 const TG = window.Telegram?.WebApp;
 if (TG) { TG.ready(); TG.expand(); }
+
+async function apiFetch(path, opts = {}) {
+  return fetch(`${API_URL}${path}`, opts);
+}
 
 async function detectServer(){
   // Try relative URL first (works on cloud hosting like Render)
@@ -2515,6 +2519,7 @@ async function sendOrder(){
       document.getElementById('promoApplied').textContent='';
       updateCart();
       showToast(data.telegram!==false ? t('toast.orderSent') : t('toast.orderSaved'));
+      if (authToken && typeof refreshUserSession === 'function') refreshUserSession();
     }
   } catch(e){
     showToast(e.message||'Ошибка сети. Звоните: +998 88 171 30 20');
@@ -2636,6 +2641,66 @@ setTimeout(initAuthValidation,500);
 let authToken=null;
 try{authToken=localStorage.getItem('pm_jwt')||null;}catch{}
 
+function applyUserSession(apiUser){
+  if(!apiUser){
+    user=null;
+    updateAuthBtn();
+    return;
+  }
+  user={
+    id:apiUser.id,
+    name:apiUser.name,
+    email:apiUser.email,
+    phone:apiUser.phone,
+    bonusBalance:apiUser.bonusBalance||0,
+  };
+  if(apiUser.savedAddresses?.length) savedAddresses=apiUser.savedAddresses;
+  if(apiUser.favs?.length) favs=new Set(apiUser.favs);
+  loyaltyBonusBalance=user.bonusBalance;
+  updateAuthBtn();
+  if(typeof updateLoyaltyUI==='function') updateLoyaltyUI();
+}
+
+async function refreshUserSession(){
+  const token=authToken||localStorage.getItem('pm_jwt');
+  if(!token) return false;
+  try{
+    if(!serverOnline) await detectServer();
+    const r=await apiFetch('/api/auth/me',{headers:{Authorization:'Bearer '+token}});
+    const d=await r.json();
+    if(d.ok&&d.user){
+      authToken=token;
+      try{localStorage.setItem('pm_jwt',token);}catch{}
+      applyUserSession(d.user);
+      loadUserData();
+      return true;
+    }
+    authToken=null;
+    user=null;
+    try{localStorage.removeItem('pm_jwt');}catch{}
+    updateAuthBtn();
+  }catch{}
+  return false;
+}
+
+async function fetchUserProfile(){
+  const headers={};
+  if(authToken) headers.Authorization='Bearer '+authToken;
+  if(!serverOnline) await detectServer();
+  if(!serverOnline) return null;
+  if(authToken){
+    const r=await apiFetch('/api/auth/me',{headers});
+    const d=await r.json();
+    if(d.ok&&d.user) return d.user;
+  }
+  if(user?.phone){
+    const r=await apiFetch(`/api/users/profile?phone=${encodeURIComponent(user.phone)}`,{headers});
+    const d=await r.json();
+    if(d.ok&&d.user) return d.user;
+  }
+  return null;
+}
+
 async function doLogin(){
   const email=document.getElementById('liEmail').value.trim().toLowerCase();
   const pass=document.getElementById('liPass').value.trim();
@@ -2647,26 +2712,25 @@ async function doLogin(){
   const btn=document.querySelector('#loginForm button');
   btn.textContent='Входим...';btn.disabled=true;
   try{
-    const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
+    const r=await apiFetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
     const d=await r.json();
     if(!d.ok){
-      btn.textContent='Войти';btn.disabled=false;
+      btn.textContent=t('auth.login');btn.disabled=false;
       if(d.error&&d.error.toLowerCase().includes('email'))showFieldError('liEmailErr',d.error);
       else showFieldError('liPassErr',d.error||'Неверный email или пароль');
       return;
     }
     authToken=d.token;
     try{localStorage.setItem('pm_jwt',d.token);}catch{}
-    user={name:d.user.name,email:d.user.email,phone:d.user.phone};
-    if(d.user.savedAddresses)savedAddresses=d.user.savedAddresses;
-    if(d.user.orderHistory)orderHistory=d.user.orderHistory;
+    applyUserSession(d.user);
+    await refreshUserSession();
     loadUserData();
-    closeAuth();updateAuthBtn();showToast('Добро пожаловать, '+user.name+'! 🍕');
+    closeAuth();showToast('Добро пожаловать, '+user.name+'! 🍕');
     renderFavorites();
   }catch(e){
     showFieldError('liPassErr','Ошибка соединения, попробуйте снова');
   }
-  btn.textContent='Войти';btn.disabled=false;
+  btn.textContent=t('auth.login');btn.disabled=false;
 }
 
 async function doReg(){
@@ -2689,7 +2753,7 @@ async function doReg(){
   const btn=document.querySelector('#regForm button');
   btn.textContent='Регистрируем...';btn.disabled=true;
   try{
-    const r=await fetch('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,phone,password:pass})});
+    const r=await apiFetch('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,phone,password:pass})});
     const d=await r.json();
     if(!d.ok){
       btn.textContent='Зарегистрироваться';btn.disabled=false;
@@ -2701,10 +2765,11 @@ async function doReg(){
     }
     authToken=d.token;
     try{localStorage.setItem('pm_jwt',d.token);}catch{}
-    user={name:d.user.name,email:d.user.email,phone:d.user.phone};
-    orderHistory=[];savedAddresses=[];favs=new Set();
+    applyUserSession(d.user);
+    await refreshUserSession();
     saveUserData();
-    closeAuth();updateAuthBtn();showToast(`Добро пожаловать, ${name}! 🎉`);
+    closeAuth();showToast(`Добро пожаловать, ${name}! 🎉`);
+    renderFavorites();
   }catch(e){
     showToast('Ошибка соединения, попробуйте снова');
   }
@@ -2712,46 +2777,49 @@ async function doReg(){
 }
 function updateAuthBtn(){
   const btn=document.getElementById('authNavBtn');
-  if(user){
-    btn.textContent=user.name;
-    btn.onclick=openProfile;
-  } else{
-    btn.textContent=t('nav.login');
-    btn.onclick=openAuth;
+  const mob=document.getElementById('mobAuthBtn');
+  const label=user?user.name:t('nav.login');
+  const onClick=user?openProfile:openAuth;
+  if(btn){
+    btn.textContent=label;
+    btn.onclick=onClick;
+    if(user) btn.dataset.authDynamic='1';
+    else delete btn.dataset.authDynamic;
+  }
+  if(mob){
+    mob.textContent=label;
+    mob.onclick=()=>{onClick();if(typeof closeMobMenu==='function')closeMobMenu();};
+    if(user) mob.dataset.authDynamic='1';
+    else delete mob.dataset.authDynamic;
   }
 }
 function doLogout(){
   user=null;authToken=null;
   try{localStorage.removeItem('pm_jwt');}catch{}
   orderHistory=[];savedAddresses=[];favs=new Set();
+  loyaltyBonusBalance=0;
   updateAuthBtn();
   document.getElementById('profileModal').classList.remove('on');
   showToast('Вы вышли из аккаунта');
 }
 async function openProfile(){
+  if(!user){openAuth();return;}
   const ph=document.getElementById('profileContent');
   ph.innerHTML='<p class="text-on-surface-variant text-sm text-center py-8">'+t('profile.loading')+'</p>';
   document.getElementById('profileModal').classList.add('on');
-  let apiOrders=[], bonusBal=user?.bonusBalance||0;
-  try{
-    if(serverOnline || await detectServer()){
-      const headers={};
-      if(authToken) headers.Authorization='Bearer '+authToken;
-      const q=user?.phone?`?phone=${encodeURIComponent(user.phone)}`:'';
-      const r=await fetch(`${API_URL}/api/users/profile${q}`,{headers});
-      const d=await r.json();
-      if(d.ok && d.user){
-        apiOrders=d.user.orderHistory||[];
-        bonusBal=d.user.bonusBalance||0;
-        if(d.user.phone) user.phone=d.user.phone;
-      }
-    }
-  }catch{}
+  let apiOrders=[], bonusBal=user.bonusBalance||0;
+  const profile=await fetchUserProfile();
+  if(profile){
+    apiOrders=profile.orderHistory||[];
+    bonusBal=profile.bonusBalance||0;
+    user.bonusBalance=bonusBal;
+    if(profile.phone) user.phone=profile.phone;
+    loyaltyBonusBalance=bonusBal;
+  }
+  const totalSpent=apiOrders.reduce((s,o)=>s+(o.total||0),0);
   const ohHTML=apiOrders.length
     ?renderOrderHistoryHTML(apiOrders)
-    :(orderHistory.length
-      ?orderHistory.map(o=>`<div class="glass-card rounded-lg p-4 mb-3"><div class="text-xs text-on-surface-variant mb-1">${o.date}</div><div class="text-sm text-on-surface-variant">${o.items}</div><div class="font-bold text-primary mt-2">${fp(o.total)}</div><span class="inline-block mt-2 text-xs px-3 py-1 rounded-full bg-surface-container text-on-surface-variant">Выполнен</span></div>`).join('')
-      :'<p class="text-on-surface-variant text-sm">Заказов пока нет</p>');
+    :'<p class="text-on-surface-variant text-sm">'+t('profile.noOrders')+'</p>';
   const addrHTML=savedAddresses.length
     ?savedAddresses.map((a,i)=>`<div class="glass-card rounded-lg px-4 py-3 mb-2 flex items-center justify-between"><span class="text-on-surface text-sm truncate flex-1">${a}</span><button onclick="removeAddress(${i})" class="text-on-surface-variant hover:text-primary ml-3 text-lg leading-none transition-colors">×</button></div>`).join('')+'<button onclick="addAddressPrompt()" class="mt-2 text-primary text-sm font-semibold hover:underline">+ Добавить адрес</button>'
     :'<p class="text-on-surface-variant text-sm mb-2">Адресов пока нет</p><button onclick="addAddressPrompt()" class="text-primary text-sm font-semibold hover:underline">+ Добавить адрес</button>';
@@ -2761,6 +2829,16 @@ async function openProfile(){
     <div class="flex items-center gap-4 glass-card rounded-xl p-5 mb-5">
       <div class="w-12 h-12 rounded-full gradient-primary flex items-center justify-center font-bold text-on-primary text-xl">${user.name[0].toUpperCase()}</div>
       <div><div class="font-bold text-on-surface text-lg">${user.name}</div><div class="text-on-surface-variant text-sm">${user.email||''}</div><div class="text-on-surface-variant text-xs mt-0.5">${user.phone||''}</div></div>
+    </div>
+    <div class="grid grid-cols-2 gap-3 mb-5">
+      <div class="glass-card rounded-lg p-4 text-center">
+        <div class="text-xl font-bold text-primary">${apiOrders.length}</div>
+        <div class="text-xs text-on-surface-variant mt-1">${t('cabinet.history')}</div>
+      </div>
+      <div class="glass-card rounded-lg p-4 text-center">
+        <div class="text-lg font-bold text-on-surface">${fp(totalSpent)}</div>
+        <div class="text-xs text-on-surface-variant mt-1">Всего потрачено</div>
+      </div>
     </div>
     <div class="cab-balance mb-5">
       <div class="text-xs text-on-surface-variant mb-1 uppercase tracking-wider font-semibold">Баланс бонусов</div>
@@ -2772,18 +2850,17 @@ async function openProfile(){
       ${ohHTML}
     </div>
     <div class="mb-5">
-      <div class="font-bold text-on-surface mb-3 flex items-center gap-2"><span class="material-symbols-outlined text-primary text-lg">location_on</span> Сохранённые адреса</div>
+      <div class="font-bold text-on-surface mb-3 flex items-center gap-2"><span class="material-symbols-outlined text-primary text-lg">location_on</span> ${t('profile.savedAddr')}</div>
       ${addrHTML}
     </div>
     <div class="mb-6">
-      <div class="font-bold text-on-surface mb-3 flex items-center gap-2"><span class="material-symbols-outlined text-primary text-lg">favorite</span> Избранные блюда</div>
+      <div class="font-bold text-on-surface mb-3 flex items-center gap-2"><span class="material-symbols-outlined text-primary text-lg">favorite</span> ${t('profile.favs')}</div>
       ${favHTML}
     </div>
-    <button onclick="signOut()" class="border border-outline-variant/30 text-on-surface-variant hover:border-primary hover:text-primary py-3 rounded-lg text-sm font-semibold transition-all w-full">Выйти из аккаунта</button>`;
-  loyaltyBonusBalance=bonusBal;
+    <button onclick="doLogout()" class="border border-outline-variant/30 text-on-surface-variant hover:border-primary hover:text-primary py-3 rounded-lg text-sm font-semibold transition-all w-full">${t('profile.logout')}</button>`;
 }
 function closeProfile(){document.getElementById('profileModal').classList.remove('on');}
-function signOut(){user=null;orderHistory=[];savedAddresses=[];favs=new Set();updateAuthBtn();closeProfile();renderFavorites();showToast('Вы вышли из аккаунта');}
+function signOut(){doLogout();closeProfile();renderFavorites();}
 
 /* ══ USER PERSISTENCE ══ */
 function saveUserData(){
@@ -2794,14 +2871,13 @@ function saveUserData(){
   }catch{}
 }
 function loadUserData(){
-  if(!user)return;
+  if(!user?.email)return;
   try{
     const key='pm_user_'+btoa(user.email);
     const d=JSON.parse(localStorage.getItem(key)||'null');
     if(!d)return;
-    orderHistory=d.orderHistory||[];
-    savedAddresses=d.savedAddresses||[];
-    favs=new Set(d.favs||[]);
+    if(!savedAddresses.length && d.savedAddresses?.length) savedAddresses=d.savedAddresses;
+    if(!favs.size && d.favs?.length) favs=new Set(d.favs);
   }catch{}
 }
 function removeAddress(i){
@@ -2906,21 +2982,10 @@ setTimeout(observeReveal,800);
 detectServer();
 // Restore session via JWT token
 (async()=>{
-  try{
-    const token=localStorage.getItem('pm_jwt');
-    if(!token)return;
-    const r=await fetch('/api/auth/me',{headers:{Authorization:'Bearer '+token}});
-    const d=await r.json();
-    if(d.ok){
-      authToken=token;
-      user={name:d.user.name,email:d.user.email,phone:d.user.phone};
-      if(d.user.savedAddresses)savedAddresses=d.user.savedAddresses;
-      if(d.user.orderHistory)orderHistory=d.user.orderHistory;
-      loadUserData();updateAuthBtn();renderFavorites();
-    } else {
-      localStorage.removeItem('pm_jwt');authToken=null;
-    }
-  }catch{}
+  const token=localStorage.getItem('pm_jwt');
+  if(!token)return;
+  authToken=token;
+  if(await refreshUserSession()) renderFavorites();
 })();
 setInterval(detectServer,15000);
 

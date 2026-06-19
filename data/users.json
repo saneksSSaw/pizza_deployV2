@@ -6,9 +6,12 @@
     "phone": "+998 93 791 68 78",
     "passHash": "7838701840323ccf5e2e2fcbb422764ceb58f0dba210d9547d9f5c7344804407",
     "createdAt": "2026-06-15T00:37:37.871Z",
-    "orderHistory": [],
+    "orderHistory": [
+      6
+    ],
     "savedAddresses": [],
-    "favs": []
+    "favs": [],
+    "bonusBalance": 6450
   },
   {
     "id": 1781810718188,
@@ -23,5 +26,22 @@
     "savedAddresses": [],
     "favs": [],
     "createdAt": "2026-06-18T19:25:18.188Z"
+  },
+  {
+    "id": 1781857272145,
+    "name": "Aziz Muhamedzanov",
+    "email": "sanekssaw67@gmail.com",
+    "phone": "+998 93 791 68 74",
+    "passHash": "08ebc2d5e78c4371bf8ca79f0f2a7b3fb2560ec92aaa33685ec51f318a558c76",
+    "salt": "794a64755257be7f01c114f311bffebb",
+    "role": "customer",
+    "bonusBalance": 102350,
+    "orderHistory": [
+      8,
+      7
+    ],
+    "savedAddresses": [],
+    "favs": [],
+    "createdAt": "2026-06-19T08:21:12.145Z"
   }
 ]

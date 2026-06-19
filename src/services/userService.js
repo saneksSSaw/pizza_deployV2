@@ -184,6 +184,43 @@ async function applyLoyaltyAfterOrder(userRef, orderRef, paidTotal) {
   return { bonusEarned, bonusBalance: updated?.bonusBalance ?? 0 };
 }
 
+function mergeOrdersLists(primary, secondary) {
+  const seen = new Set();
+  const out = [];
+  for (const o of [...primary, ...secondary]) {
+    const key = String(o?.id ?? o?.orderNumber ?? '');
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(o);
+  }
+  return out
+    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+    .slice(0, 50);
+}
+
+async function fetchOrdersByPhone(phone) {
+  const phoneNorm = normalizePhone(phone);
+  if (!phoneNorm) return [];
+
+  if (isJson()) {
+    const state = jsonStore.loadOrdersState();
+    return state.orders
+      .filter((o) => normalizePhone(o.phone || '') === phoneNorm)
+      .slice(0, 50)
+      .map((o) => toAPIOrder(o))
+      .filter(Boolean);
+  }
+
+  const displayPhone = formatPhoneDisplay(phoneNorm);
+  const docs = await Order.find({
+    $or: [{ phone: displayPhone }, { phone: phone }, { phone: { $regex: phoneNorm.slice(-9) + '$' } }],
+  })
+    .sort({ createdAt: -1 })
+    .limit(50)
+    .lean();
+  return docs.map((o) => toAPIOrder(o)).filter(Boolean);
+}
+
 async function resolveOrderHistoryEntries(user) {
   const history = user.orderHistory || [];
   if (!history.length) return [];
@@ -215,7 +252,11 @@ async function getLoyaltyProfile({ phone, legacyId }) {
     throw err;
   }
 
-  const orders = await resolveOrderHistoryEntries(user);
+  let orders = await resolveOrderHistoryEntries(user);
+  if (user.phone) {
+    const byPhone = await fetchOrdersByPhone(user.phone);
+    orders = mergeOrdersLists(orders, byPhone);
+  }
   const apiUser = toAPIUser(user);
   return {
     ...apiUser,
@@ -224,26 +265,45 @@ async function getLoyaltyProfile({ phone, legacyId }) {
   };
 }
 
+function isGuestPhoneUser(user) {
+  return user && !user.email && !user.passHash;
+}
+
 async function register(data) {
+  const email = data.email.toLowerCase();
+  const phoneNorm = normalizePhone(data.phone);
+  const displayPhone = phoneNorm ? formatPhoneDisplay(phoneNorm) : data.phone;
+  const { hash, salt } = hashPass(data.password);
+
   if (isJson()) {
     const users = jsonStore.loadUsers();
-    if (users.find((u) => u.email === data.email.toLowerCase())) {
+    if (users.find((u) => u.email === email)) {
       const err = new Error('Этот email уже зарегистрирован');
       err.statusCode = 409;
       throw err;
     }
-    const phoneNorm = normalizePhone(data.phone);
-    if (phoneNorm && users.find((u) => normalizePhone(u.phone || '') === phoneNorm)) {
-      const err = new Error('Этот телефон уже зарегистрирован');
-      err.statusCode = 409;
-      throw err;
+    const phoneUser = phoneNorm
+      ? users.find((u) => normalizePhone(u.phone || '') === phoneNorm)
+      : null;
+    if (phoneUser) {
+      if (!isGuestPhoneUser(phoneUser)) {
+        const err = new Error('Этот телефон уже зарегистрирован');
+        err.statusCode = 409;
+        throw err;
+      }
+      phoneUser.name = data.name;
+      phoneUser.email = email;
+      phoneUser.phone = displayPhone;
+      phoneUser.passHash = hash;
+      phoneUser.salt = salt;
+      jsonStore.saveUsers(users);
+      return toAPIUser(phoneUser);
     }
-    const { hash, salt } = hashPass(data.password);
     const user = {
       id: Date.now(),
       name: data.name,
-      email: data.email.toLowerCase(),
-      phone: data.phone,
+      email,
+      phone: displayPhone,
       passHash: hash,
       salt,
       role: 'customer',
@@ -258,27 +318,35 @@ async function register(data) {
     return toAPIUser(user);
   }
 
-  const existing = await User.findOne({ email: data.email.toLowerCase() });
+  const existing = await User.findOne({ email });
   if (existing) {
     const err = new Error('Этот email уже зарегистрирован');
     err.statusCode = 409;
     throw err;
   }
-  const phoneNorm = normalizePhone(data.phone);
   if (phoneNorm) {
     const phoneTaken = await User.findOne({ phoneNorm });
     if (phoneTaken) {
-      const err = new Error('Этот телефон уже зарегистрирован');
-      err.statusCode = 409;
-      throw err;
+      if (!isGuestPhoneUser(phoneTaken)) {
+        const err = new Error('Этот телефон уже зарегистрирован');
+        err.statusCode = 409;
+        throw err;
+      }
+      phoneTaken.name = data.name;
+      phoneTaken.email = email;
+      phoneTaken.phone = displayPhone;
+      phoneTaken.phoneNorm = phoneNorm;
+      phoneTaken.passHash = hash;
+      phoneTaken.salt = salt;
+      await phoneTaken.save();
+      return toAPIUser(phoneTaken);
     }
   }
-  const { hash, salt } = hashPass(data.password);
   const user = await User.create({
     legacyId: Date.now(),
     name: data.name,
-    email: data.email.toLowerCase(),
-    phone: data.phone,
+    email,
+    phone: displayPhone,
     phoneNorm: phoneNorm || undefined,
     passHash: hash,
     salt,

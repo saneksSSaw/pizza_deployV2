@@ -625,6 +625,7 @@ function getZoneLabel(zone) {
 
 function applyI18n() {
   document.querySelectorAll('[data-i18n]').forEach((el) => {
+    if (el.dataset.authDynamic) return;
     el.textContent = t(el.dataset.i18n);
   });
   document.querySelectorAll('[data-i18n-html]').forEach((el) => {

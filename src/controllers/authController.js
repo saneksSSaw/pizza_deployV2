@@ -13,7 +13,8 @@ async function register(req, res) {
   const phoneErr = validatePhone(phone);
   if (phoneErr) return res.status(400).json({ ok: false, error: phoneErr });
   if (!pass || pass.length < 6) return res.status(400).json({ ok: false, error: 'Пароль минимум 6 символов' });
-  const user = await userService.register({ name, email, phone, password: pass });
+  const created = await userService.register({ name, email, phone, password: pass });
+  const user = await userService.getLoyaltyProfile({ legacyId: created.id });
   const token = signJWT({ id: user.id, email: user.email, role: user.role });
   res.status(201).json({ ok: true, token, user });
 }
@@ -23,7 +24,8 @@ async function login(req, res) {
   const pass = (req.body.password || '').trim();
   if (!email || !pass) return res.status(400).json({ ok: false, error: 'Введите email и пароль' });
   try {
-    const user = await userService.login(email, pass);
+    const loggedIn = await userService.login(email, pass);
+    const user = await userService.getLoyaltyProfile({ legacyId: loggedIn.id });
     const token = signJWT({ id: user.id, email: user.email, role: user.role });
     res.json({ ok: true, token, user });
   } catch (err) {

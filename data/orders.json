@@ -1,6 +1,113 @@
 {
-  "counter": 6,
+  "counter": 9,
   "orders": [
+    {
+      "orderNumber": 8,
+      "id": 8,
+      "name": "Aziz Muhammedzanov",
+      "phone": "+998 93 791 68 78",
+      "address": "Йулдош (Спутник) 17, Сергели, Янгихаётский район, Ташкент",
+      "note": "",
+      "items": [
+        {
+          "name": "Пепперони",
+          "size": 30,
+          "qty": 18,
+          "price": 57000,
+          "dough": "Традиционное",
+          "toppings": []
+        },
+        {
+          "name": "Мясная",
+          "size": 35,
+          "qty": 10,
+          "price": 82000,
+          "dough": "Традиционное",
+          "toppings": []
+        }
+      ],
+      "subtotal": 1846000,
+      "deliveryFee": 15000,
+      "deliveryLabel": "Сергели",
+      "deliveryZone": "sergeli",
+      "district": "Сергели",
+      "promo": null,
+      "promoDiscount": 0,
+      "totalBeforeBonus": 1861000,
+      "bonusUsed": 0,
+      "bonusEarned": 93050,
+      "total": 1861000,
+      "payment": "cash",
+      "status": "done",
+      "createdAt": "2026-06-19T08:22:40.588Z",
+      "statusUpdatedAt": "2026-06-19T08:22:46.387Z"
+    },
+    {
+      "orderNumber": 7,
+      "id": 7,
+      "name": "Aziz Muhammedzanov",
+      "phone": "+998 93 791 68 78",
+      "address": "Йулдош (Спутник) 17, Сергели, Янгихаётский район, Ташкент",
+      "note": "",
+      "items": [
+        {
+          "name": "Пепперони",
+          "size": 30,
+          "qty": 3,
+          "price": 57000,
+          "dough": "Традиционное",
+          "toppings": []
+        }
+      ],
+      "subtotal": 171000,
+      "deliveryFee": 15000,
+      "deliveryLabel": "Сергели",
+      "deliveryZone": "sergeli",
+      "district": "Сергели",
+      "promo": null,
+      "promoDiscount": 0,
+      "totalBeforeBonus": 186000,
+      "bonusUsed": 0,
+      "bonusEarned": 9300,
+      "total": 186000,
+      "payment": "cash",
+      "status": "done",
+      "createdAt": "2026-06-19T08:21:39.661Z",
+      "statusUpdatedAt": "2026-06-19T08:21:46.646Z"
+    },
+    {
+      "orderNumber": 6,
+      "id": 6,
+      "name": "Aziz Muhammedzanov",
+      "phone": "+998 93 791 68 78",
+      "address": "Йулдош (Спутник) 17, Сергели, Янгихаётский район, Ташкент",
+      "note": "",
+      "items": [
+        {
+          "name": "Пепперони",
+          "size": 30,
+          "qty": 2,
+          "price": 57000,
+          "dough": "Традиционное",
+          "toppings": []
+        }
+      ],
+      "subtotal": 114000,
+      "deliveryFee": 15000,
+      "deliveryLabel": "Сергели",
+      "deliveryZone": "sergeli",
+      "district": "Сергели",
+      "promo": null,
+      "promoDiscount": 0,
+      "totalBeforeBonus": 129000,
+      "bonusUsed": 0,
+      "bonusEarned": 6450,
+      "total": 129000,
+      "payment": "cash",
+      "status": "done",
+      "createdAt": "2026-06-19T08:19:53.070Z",
+      "statusUpdatedAt": "2026-06-19T08:20:08.569Z"
+    },
     {
       "name": "Азиз Мухаммедзянов",
       "phone": "+998 93 791 68 78",
